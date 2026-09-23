@@ -1,0 +1,19 @@
+# logs written next to copied photos when testing inside the repo
+iphone-copy-log.txt
+iphone-copy-failed.txt
+
+# never commit copied photos by accident
+*.HEIC
+*.heic
+*.JPG
+*.jpg
+*.JPEG
+*.jpeg
+*.PNG
+*.MOV
+*.mov
+*.MP4
+*.mp4
+*.AAE
+*.aae
+!docs/*.png
