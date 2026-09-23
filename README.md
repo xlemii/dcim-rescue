@@ -1,116 +1,118 @@
-# DCIM Rescue 📱➡️💻
+# DCIM Rescue
 
-Copy **all photos, videos and screenshots** from an iPhone to a Windows PC over a USB cable,
-reliably. No iTunes, no cloud, no installation, just a double-click.
+Copies photos, videos and screenshots from an iPhone to a Windows PC over USB, verifying each
+file and retrying the ones that fail.
 
 ![DCIM Rescue window](docs/screenshot.png)
 
-Windows' own "Import" and drag-and-drop in File Explorer tend to fail halfway through large
-libraries (the phone locks, the connection drops, a 4 GB video times out) and then you don't
-know what made it and what didn't. This tool fixes that:
+## Why
 
-- ✅ **Checks every file.** A file only counts as copied when its size on disk matches the phone.
-- 🔁 **Retries failed files automatically** (5 times by default, with increasing pauses).
-- 🔌 **Survives disconnects.** If the phone locks or the cable wiggles, it waits and carries on.
-- ⏯️ **Resumes.** Run it again and it skips what's already there, copying only what's missing.
-- 🔍 **"Check the copy" button.** Compares the phone and the folder file-by-file, copies nothing.
-- 📊 Progress bar with speed (MB/s) and time left. Keeps the PC awake while copying.
-- 📁 Keeps the phone's folder layout (`202506_a`, `202507_a`… or `100APPLE`… on older iOS).
-- 📝 Writes a log (`iphone-copy-log.txt`) and a list of failed files (`iphone-copy-failed.txt`).
-- Copies original files byte-for-byte: HEIC, JPG, PNG screenshots, MOV, MP4, Live Photo videos, AAE edit data.
+Importing a large iPhone library on Windows is unreliable. File Explorer and the Photos app
+often stop partway through when the phone locks or the connection drops, and it is hard to tell
+which files were copied. DCIM Rescue copies files one at a time and checks each one before it
+moves on.
+
+## Features
+
+- A file counts as copied only when its size on disk matches the size on the phone.
+- Failed or stalled transfers are retried (5 attempts by default) and the connection to the
+  phone is re-established between attempts.
+- Running it again skips files that are already complete, so an interrupted transfer can be
+  resumed.
+- Verify mode compares the phone with the destination folder without copying anything.
+- The phone's folder structure is preserved (`202506_a`, or `100APPLE` on older iOS versions).
+- Original files are copied unchanged: HEIC, JPG, PNG, MOV, MP4, AAE.
+- The PC is kept awake while copying.
+- A log (`iphone-copy-log.txt`) and a list of failed files (`iphone-copy-failed.txt`) are
+  written to the destination folder.
+- The tool only reads from the phone. It never deletes or modifies anything on it.
 
 ## Requirements
 
-- Windows 10 or 11 (uses the built-in PowerShell 5.1, so nothing to install)
-- Apple's USB driver: install **[Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k)** from Microsoft Store (or iTunes)
-- A Lightning / USB-C cable
+- Windows 10 or 11. The tool runs on the built-in Windows PowerShell 5.1, so there is nothing
+  else to install.
+- Apple's USB driver, included with [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k)
+  (Microsoft Store) or iTunes.
+- A USB cable.
 
-## How to use
+## Usage
 
-1. Download this repository (**Code → Download ZIP**) and unzip it anywhere.
-2. Connect the iPhone, **unlock it** and tap **Trust** when asked.
-3. *(Recommended)* On the iPhone set **Settings → Display & Brightness → Auto-Lock → Never** for the duration,
-   and **Settings → Photos → Transfer to Mac or PC → Keep Originals**.
-4. Double-click **`DCIM Rescue.bat`**.
-5. Choose a folder and press **Start copying**. When it's done, press **Check the copy** to be sure.
+1. Download the repository (**Code > Download ZIP**) and extract it.
+2. Connect the iPhone, unlock it and tap **Trust** when prompted.
+3. Run `DCIM Rescue.bat`.
+4. Choose a destination folder and click **Start copying**.
+5. When it finishes, click **Check the copy** to compare the folder with the phone.
 
-If anything fails, just press **Start copying** again. Only missing files are copied.
+If any files fail, click **Start copying** again. Only missing or incomplete files will be copied.
+
+Recommended iPhone settings for large transfers:
+
+- **Settings > Display & Brightness > Auto-Lock > Never**. Copying stops when the phone locks.
+- **Settings > Photos > Transfer to Mac or PC > Keep Originals**. The phone then sends original
+  files and does not convert them during the transfer.
 
 ### Command line
 
 ```powershell
-# copy everything (default destination: Pictures\iPhone)
+# Copy everything (default destination: Pictures\iPhone)
 powershell -NoProfile -ExecutionPolicy Bypass -STA -File src\iPhoneCopy.ps1 -Destination "D:\Photos\iPhone"
 
-# only compare the phone with the folder
+# Compare the phone with the folder without copying
 powershell -NoProfile -ExecutionPolicy Bypass -STA -File src\iPhoneCopy.ps1 -Destination "D:\Photos\iPhone" -Verify
 
-# only count files and total size
+# Count files and total size only
 powershell -NoProfile -ExecutionPolicy Bypass -STA -File src\iPhoneCopy.ps1 -ListOnly
 ```
 
-| Option | Default | Meaning |
+| Parameter | Default | Description |
 |---|---|---|
-| `-Destination` | `Pictures\iPhone` | Where to save |
+| `-Destination` | `Pictures\iPhone` | Destination folder |
 | `-MaxRetries` | `5` | Attempts per file |
-| `-StallSeconds` | `90` | A copy that makes no progress for this long counts as failed and is retried |
-| `-Verify` | | Compare only, copy nothing |
-| `-ListOnly` | | Count files and size only |
+| `-StallSeconds` | `90` | A transfer with no progress for this many seconds counts as failed |
+| `-Verify` | | Compare only, do not copy |
+| `-ListOnly` | | List files and total size only |
 
-Exit code is `0` when everything is copied / matches, `1` otherwise.
+The exit code is `0` on success and `1` if any file failed or is missing.
 
-## FAQ
+## Troubleshooting
 
-**The Photos app on my iPhone shows fewer items than the number of copied files. Is something wrong?**
-No. A Live Photo is one item in the app but two files (photo + short `.MOV`), and `.AAE` files
-(edit information) aren't shown in the app at all.
+**The iPhone Photos app shows fewer items than the number of copied files.**
+This is expected. A Live Photo is a single item in the app but two files on disk (an image and
+a `.MOV`). `.AAE` files hold edit data and do not appear in the app.
 
-**Some photos are missing / the total is much smaller than my library.**
-If **iCloud Photos** with **Optimize iPhone Storage** is on, many originals live only in iCloud and
-the phone doesn't expose them over USB. Switch to **Download and Keep Originals**, wait for it
-to finish, then run the copy again. Or use iCloud for Windows.
+**Many photos are missing.**
+If iCloud Photos is enabled with **Optimize iPhone Storage**, the full-resolution originals of
+many photos are only in iCloud and the phone does not provide them over USB. Switch to
+**Download and Keep Originals**, wait for the download to complete, then run the copy again.
 
-**It says "Can't see the iPhone's photos".**
-Unlock the phone and tap **Trust**. If the phone doesn't appear in File Explorer at all, install
-Apple Devices from Microsoft Store and reconnect the cable.
+**"Can't see the iPhone's photos."**
+Unlock the phone and confirm **Trust**. If the phone does not appear in File Explorer, install
+Apple Devices and reconnect the cable.
 
-**I can't open `.HEIC` / `.MOV` files.**
-Install **HEIF Image Extensions** and **HEVC Video Extensions** from Microsoft Store.
+**HEIC or MOV files don't open.**
+Install **HEIF Image Extensions** and **HEVC Video Extensions** from the Microsoft Store.
 
-**Is it fast?**
-It's as fast as the phone's USB connection allows (an iPhone 11 is USB 2.0: roughly 20–35 MB/s).
-Use a USB 3 port and a good cable. ~55 GB / 6,700 files took about 50 minutes in testing.
+**Transfer speed.**
+Transfer speed depends on the phone's USB connection. iPhones with Lightning connectors are
+limited to USB 2.0, roughly 20–35 MB/s. As a reference, 55 GB (about 6,700 files) from an
+iPhone 11 took around 50 minutes.
 
 ## How it works
 
-The iPhone shows up in Windows as an MTP device. The tool talks to it through the same shell
-API as File Explorer (`Shell.Application`), lists every file with its exact size, and copies them
-one by one with `CopyHere`. Because `CopyHere` is asynchronous and gives no error feedback, the tool
-watches the destination file until it reaches the expected size and is no longer locked. A file that
-stops growing for `StallSeconds` is treated as failed, the connection to the phone is re-established,
-and the file is retried.
+Windows exposes the iPhone as an MTP device. DCIM Rescue accesses it through the
+`Shell.Application` COM interface, the same API that File Explorer uses. It lists every file
+with its size and copies files one at a time with `CopyHere`. `CopyHere` is asynchronous and
+does not report errors, so the tool waits until the destination file has reached the expected
+size and is no longer locked. If a file stops growing for `StallSeconds`, the attempt counts as
+failed. The tool then reconnects to the phone and retries the file.
 
 ```
-DCIM Rescue.bat           → starts the window
-src/iPhoneCopyGUI.ps1     → Windows Forms UI (copy runs in a background runspace)
-src/iPhoneCopy.ps1        → command-line version
-src/iPhoneCopy.Core.ps1   → shared logic: device discovery, copy + retry, verify
+DCIM Rescue.bat            Launches the GUI
+src/iPhoneCopyGUI.ps1      Windows Forms interface; copying runs in a background runspace
+src/iPhoneCopy.ps1         Command-line interface
+src/iPhoneCopy.Core.ps1    Device discovery, copy with retry, verification
 ```
-
-Nothing is ever deleted from the phone. The tool only reads from it.
 
 ## License
 
 [MIT](LICENSE)
-
----
-
-### 🇵🇱 Po polsku w skrócie
-
-Narzędzie kopiuje **wszystkie zdjęcia, filmy i zrzuty ekranu** z iPhone'a na komputer z Windows przez kabel.
-Sprawdza rozmiar każdego pliku, przy błędzie ponawia kopiowanie, a po przerwaniu wznawia od miejsca, w którym skończyło.
-
-1. Zainstaluj **Apple Devices** z Microsoft Store.
-2. Podłącz iPhone'a, odblokuj go i kliknij **Zaufaj**.
-3. Uruchom **`DCIM Rescue.bat`**, wybierz folder i kliknij **Start copying**.
-4. Na koniec kliknij **Check the copy**, żeby porównać telefon z folderem.
